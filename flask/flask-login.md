@@ -12,7 +12,7 @@
         
         @login_manager.user_loader
         def load_user(user_id):
-          return User.get_by_id(user_id) # get id from session,then retrieve user object from database
+          return User.get_by_id(user_id) # get id from session,then retrieve user object from database with peewee query
        ``` 
   1. Optional (Customizing the Login Process) => https://flask-login.readthedocs.io/en/latest/#customizing-the-login-process
       - if a user try to access route with `@login_required` decorator without logged in:
@@ -45,15 +45,15 @@
   1. Use the logout_user function for logging out in `instagram_web/blueprints/sessions/views.py`.
       - have login_required decorator because it doesn't make sense to logout a user who isn't logged in to begin with
       ```py
-        from flask_login import logout_user
+        from flask_login import logout_user, login_required
 
-        @sessions_blueprint.route('/delete',methods=['POST'])
+        @sessions_blueprint.route('/delete')
         @login_required
         def destroy():
             logout_user()
             return redirect(url_for('sessions.new'))
        ``` 
-  1. Adding UserMixin class to our User model in `models/user.py`.
+  1. Adding `UserMixin` class to our User model in `models/user.py`.
       - The UserMixin will provide `is_authenticated`, `is_active`, `is_anonymous` and `get_id()` properties and methods to our model so Flask-Login will be able to work with it
       ```py
         from flask_login import UserMixin
@@ -65,8 +65,9 @@
        ``` 
   1. Use `current_user` in jinja template and `views.py`.
       - Access the logged-in user with the `current_user` proxy, which is available in every template.
+      - For example, you can use it in your `templates/_navbar.html` as below:
+
       ```jinja
-        templates/_layout.html
 
         {% if current_user.is_authenticated %}
           <li>
@@ -81,15 +82,15 @@
           </li>
         {% endif %}
       ```
+      - OR, use it in your `instagram_web/blueprints/users/views.py` as below:
       ```py
-        # instagram_web/blueprints/users/views.py
         from flask_login import current_user
 
         @users_blueprint.route('/<id>/edit', methods=["GET"])
         def edit(id):
-          user = User.get_or_none(User.username==username)
+          user = User.get_or_none(User.username == username)
           if current_user.role == "admin" or current_user.id == user.id:
-            return render_template("users/edit.html",user=user)
+            return render_template("users/edit.html", user=user)
           else:
             # flash error message
        ``` 
